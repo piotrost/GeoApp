@@ -2,9 +2,6 @@ package pl.pw.geoapp
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -19,8 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.app.ActivityCompat
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var beaconScanner: BeaconScanner
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -46,6 +46,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setUpUI()
         requestRequiredPermissions()
+
+        beaconScanner = BeaconScanner(this) { beacons ->
+            val beaconPositions = listOf(
+                Beacon(x = 0.0, y = 0.0, distance = beacons.getOrNull(0)?.distance ?: 0.0),
+                Beacon(x = 5.0, y = 0.0, distance = beacons.getOrNull(1)?.distance ?: 0.0),
+                Beacon(x = 2.5, y = 4.0, distance = beacons.getOrNull(2)?.distance ?: 0.0)
+            )
+
+            val position = Multilateration.calculate(beaconPositions)
+            position?.let {
+                Log.d("User Position", "X: ${it.first}, Y: ${it.second}")
+            }
+        }
     }
 
     override fun onStart() {
@@ -79,6 +92,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("MainActivity", "onDestroy")
+        beaconScanner.stopScanning()
     }
 
     private fun requestRequiredPermissions() {
