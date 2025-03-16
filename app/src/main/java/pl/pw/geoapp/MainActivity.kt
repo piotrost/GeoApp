@@ -16,11 +16,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.Observer
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var beaconScanner: BeaconScanner
+    private var connectionReceiver: ConnectionChangeStateReceiver? = null  // Ensure single instance
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -47,7 +47,18 @@ class MainActivity : AppCompatActivity() {
         setUpUI()
         requestRequiredPermissions()
 
-        observeStatus()
+        beaconScanner = BeaconScanner(this) { beacons ->
+            val beaconPositions = listOf(
+                Beacon(x = 0.0, y = 0.0, distance = beacons.getOrNull(0)?.distance ?: 0.0),
+                Beacon(x = 5.0, y = 0.0, distance = beacons.getOrNull(1)?.distance ?: 0.0),
+                Beacon(x = 2.5, y = 4.0, distance = beacons.getOrNull(2)?.distance ?: 0.0)
+            )
+
+            val position = Multilateration.calculate(beaconPositions)
+            position?.let {
+                Log.d("User Position", "X: ${it.first}, Y: ${it.second}")
+            }
+        }
     }
 
     override fun onStart() {
@@ -82,38 +93,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         Log.d("MainActivity", "onDestroy")
         beaconScanner.stopScanning()
-    }
-
-    private fun observeStatus() {
-        StatusLiveData.isGpsEnabled.observe(this, Observer { gpsEnabled ->
-            StatusLiveData.isBluetoothEnabled.observe(this, Observer { bluetoothEnabled ->
-                if (gpsEnabled && bluetoothEnabled) {
-                    startMultilateration()
-                } else {
-                    stopMultilateration()
-                }
-            })
-        })
-    }
-
-    private fun startMultilateration() {
-        beaconScanner = BeaconScanner(this) { beacons ->
-            val beaconPositions = listOf(
-                Beacon(x = 0.0, y = 0.0, distance = beacons.getOrNull(0)?.distance ?: 0.0),
-                Beacon(x = 5.0, y = 0.0, distance = beacons.getOrNull(1)?.distance ?: 0.0),
-                Beacon(x = 2.5, y = 4.0, distance = beacons.getOrNull(2)?.distance ?: 0.0)
-            )
-
-            val position = Multilateration.calculate(beaconPositions)
-            position?.let {
-                Log.d("User Position", "X: ${it.first}, Y: ${it.second}")
-            }
-        }
-    }
-
-    private fun stopMultilateration() {
-        beaconScanner.stopScanning()
-        Log.d("Multilateration", "Stopped due to GPS or Bluetooth being off.")
+        connectionReceiver?.let { unregisterReceiver(it) }  // Unregister receiver
     }
 
     private fun requestRequiredPermissions() {
@@ -158,13 +138,21 @@ class MainActivity : AppCompatActivity() {
             Toast.LENGTH_SHORT
         ).show()
 
-        val receiver = ConnectionChangeStateReceiver()
-        val filter = IntentFilter().apply {
-            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)  // For GPS state changes
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)      // For Bluetooth state changes
+        connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
+            if (canScan) {
+                Log.d("MainActivity", "Starting beacon scanning...")
+                beaconScanner.startScanning()
+            } else {
+                Log.d("MainActivity", "Stopping beacon scanning...")
+                beaconScanner.stopScanning()
+            }
         }
-        registerReceiver(receiver, filter)
 
+        val filter = IntentFilter().apply {
+            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+        }
+        registerReceiver(connectionReceiver, filter)
     }
 
     private fun setUpUI() {

@@ -36,16 +36,6 @@ android {
 }
 
 dependencies {
-    // Java language implementation
-    implementation(libs.androidx.core)
-    // Kotlin
-    implementation(libs.androidx.core.ktx.v1150)
-    // To use RoleManagerCompat
-    implementation(libs.androidx.core.role)
-    // To use the Animator APIs
-    implementation(libs.androidx.core.animation)
-    // To test the Animator APIs
-    androidTestImplementation(libs.androidx.core.animation.testing)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -56,6 +46,11 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // beacon multilateration
+    // added
+    implementation(libs.androidx.core)
+    implementation(libs.androidx.core.role)
+    implementation(libs.androidx.core.animation)
+    androidTestImplementation(libs.androidx.core.animation.testing)
+
     implementation(libs.android.beacon.library)
 }
