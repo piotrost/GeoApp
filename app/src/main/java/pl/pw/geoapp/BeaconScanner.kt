@@ -6,30 +6,40 @@ import kotlin.math.pow
 
 class BeaconScanner(private val context: Context, private val callback: (List<BeaconData>) -> Unit) : BeaconConsumer {
     private val beaconManager: BeaconManager = BeaconManager.getInstanceForApplication(context)
+    private var isScanning = false // Track scanning state
 
     init {
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(BeaconParser.ALTBEACON_LAYOUT))
-        beaconManager.bind(this)
     }
 
     override fun onBeaconServiceConnect() {
-        val region = Region("all-beacons-region", null, null, null)
-
-        beaconManager.addRangeNotifier { beacons, _ ->
-            val beaconDataList = beacons.map { beacon ->
-                BeaconData(
-                    uuid = beacon.id1.toString(),
-                    distance = estimateDistance(beacon.txPower, beacon.rssi)
-                )
+        if (isScanning) {
+            val region = Region("all-beacons-region", null, null, null)
+            beaconManager.addRangeNotifier { beacons, _ ->
+                val beaconDataList = beacons.map { beacon ->
+                    BeaconData(
+                        uuid = beacon.id1.toString(),
+                        distance = estimateDistance(beacon.txPower, beacon.rssi)
+                    )
+                }
+                callback(beaconDataList)
             }
-            callback(beaconDataList) // Send data to the listener
+            beaconManager.startRangingBeacons(region)
         }
+    }
 
-        beaconManager.startRangingBeacons(region)
+    fun startScanning() {
+        if (!isScanning) {
+            isScanning = true
+            beaconManager.bind(this) // Bind to start scanning
+        }
     }
 
     fun stopScanning() {
-        beaconManager.unbind(this)
+        if (isScanning) {
+            isScanning = false
+            beaconManager.unbind(this) // Unbind to stop scanning
+        }
     }
 
     override fun getApplicationContext(): Context = context

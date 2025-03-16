@@ -20,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat
 class MainActivity : AppCompatActivity() {
 
     private lateinit var beaconScanner: BeaconScanner
+    private var connectionReceiver: ConnectionChangeStateReceiver? = null  // Ensure single instance
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -92,6 +93,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         Log.d("MainActivity", "onDestroy")
         beaconScanner.stopScanning()
+        connectionReceiver?.let { unregisterReceiver(it) }  // Unregister receiver
     }
 
     private fun requestRequiredPermissions() {
@@ -136,13 +138,21 @@ class MainActivity : AppCompatActivity() {
             Toast.LENGTH_SHORT
         ).show()
 
-        val receiver = ConnectionChangeStateReceiver()
-        val filter = IntentFilter().apply {
-            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)  // For GPS state changes
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)      // For Bluetooth state changes
+        connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
+            if (canScan) {
+                Log.d("MainActivity", "Starting beacon scanning...")
+                beaconScanner.startScanning()
+            } else {
+                Log.d("MainActivity", "Stopping beacon scanning...")
+                beaconScanner.stopScanning()
+            }
         }
-        registerReceiver(receiver, filter)
 
+        val filter = IntentFilter().apply {
+            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+        }
+        registerReceiver(connectionReceiver, filter)
     }
 
     private fun setUpUI() {
