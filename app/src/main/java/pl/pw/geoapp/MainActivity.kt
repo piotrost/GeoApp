@@ -153,6 +153,7 @@ class MainActivity : AppCompatActivity() {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
         }
         registerReceiver(connectionReceiver, filter)
+
     }
 
     private fun setUpUI() {
