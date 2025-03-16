@@ -48,11 +48,10 @@ class MainActivity : AppCompatActivity() {
         requestRequiredPermissions()
 
         beaconScanner = BeaconScanner(this) { beacons ->
-            val beaconPositions = listOf(
-                Beacon(x = 0.0, y = 0.0, distance = beacons.getOrNull(0)?.distance ?: 0.0),
-                Beacon(x = 5.0, y = 0.0, distance = beacons.getOrNull(1)?.distance ?: 0.0),
-                Beacon(x = 2.5, y = 4.0, distance = beacons.getOrNull(2)?.distance ?: 0.0)
-            )
+            // The 'beacons' here contains the actual nearby beacons and their distance values
+            val beaconPositions = beacons.mapIndexed { index, beaconData ->
+                Beacon(x = index.toDouble() * 5.0, y = index.toDouble() * 5.0, distance = beaconData.distance)
+            }
 
             val position = Multilateration.calculate(beaconPositions)
             position?.let {
