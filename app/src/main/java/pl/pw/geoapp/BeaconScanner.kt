@@ -1,6 +1,7 @@
 package pl.pw.geoapp
 
 import android.content.Context
+import android.util.Log
 import org.altbeacon.beacon.*
 import kotlin.math.pow
 
@@ -10,20 +11,44 @@ class BeaconScanner(private val context: Context, private val callback: (List<Be
 
     init {
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(BeaconParser.ALTBEACON_LAYOUT))
+        beaconManager.foregroundBetweenScanPeriod = 1100L // Scan every ~1 second
+        beaconManager.backgroundBetweenScanPeriod = 0L // No delay in background
+        beaconManager.updateScanPeriods()
+        BeaconManager.setDebug(true) // Enable debug logs for beacon scanning
+        beaconManager.isRegionStatePersistenceEnabled = false
     }
 
     override fun onBeaconServiceConnect() {
         if (isScanning) {
+            Log.d("BeaconScanner", "✅ Connected to Beacon Service, starting ranging.")
             val region = Region("all-beacons-region", null, null, null)
+
+            Log.d("BeaconScanner", "🔍 Adding range notifier...")
             beaconManager.addRangeNotifier { beacons, _ ->
+                Log.d("BeaconScanner", "🔔 RangeNotifier triggered!")  // <-- Add this!
+
+                if (beacons.isEmpty()) {
+                    Log.d("BeaconScanner", "⚠ No beacons detected!")
+                } else {
+                    Log.d("BeaconScanner", "📡 Detected ${beacons.size} beacon(s)!")
+                }
+
                 val beaconDataList = beacons.map { beacon ->
+                    val rssi = beacon.rssi
+                    val txPower = beacon.txPower
+                    val distance = estimateDistance(txPower, rssi)
+
+                    Log.d("BeaconScanner", "UUID: ${beacon.id1}, RSSI: $rssi, TX: $txPower, Distance: $distance")
+
                     BeaconData(
                         uuid = beacon.id1.toString(),
-                        distance = estimateDistance(beacon.txPower, beacon.rssi)
+                        distance = distance
                     )
                 }
                 callback(beaconDataList)
             }
+
+            Log.d("BeaconScanner", "🚀 Starting beacon ranging...")
             beaconManager.startRangingBeacons(region)
         }
     }

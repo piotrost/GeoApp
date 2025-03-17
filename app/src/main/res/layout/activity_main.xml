@@ -13,7 +13,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:adjustViewBounds="true"
-        android:src="@drawable/map" />
+        android:src="@drawable/beacons" />
 
     <Button
         android:id="@+id/show_map_button"
