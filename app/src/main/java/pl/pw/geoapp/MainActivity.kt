@@ -21,7 +21,7 @@ import androidx.core.view.WindowInsetsCompat
 class MainActivity : AppCompatActivity() {
 
     private lateinit var beaconScanner: BeaconScanner
-    private var connectionReceiver: ConnectionChangeStateReceiver? = null  // Ensure single instance
+    private lateinit var connectionReceiver: ConnectionChangeStateReceiver
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -65,24 +65,6 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         Log.d("MainActivity", "onStart")
         checkGpsAndBluetoothState()
-    }
-
-    private fun checkGpsAndBluetoothState() {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
-        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        val isBluetoothEnabled = bluetoothAdapter?.isEnabled == true
-
-        if (isGpsEnabled && isBluetoothEnabled) {
-            // Both are enabled, start scanning
-            Log.d("MainActivity", "Starting beacon scanning...")
-            beaconScanner.startScanning()
-        } else {
-            // Show a message to the user
-            Log.d("MainActivity", "GPS or Bluetooth not enabled. Cannot start scanning.")
-            Toast.makeText(this, "Please enable both GPS and Bluetooth.", Toast.LENGTH_SHORT).show()
-        }
     }
 
     override fun onResume() {
@@ -173,6 +155,24 @@ class MainActivity : AppCompatActivity() {
         }
         registerReceiver(connectionReceiver, filter)
 
+    }
+
+    private fun checkGpsAndBluetoothState() {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val isBluetoothEnabled = bluetoothAdapter?.isEnabled == true
+
+        if (isGpsEnabled && isBluetoothEnabled) {
+            // Both are enabled, start scanning
+            Log.d("MainActivity", "Starting beacon scanning...")
+            beaconScanner.startScanning()
+        } else {
+            // Show a message to the user
+            Log.d("MainActivity", "GPS or Bluetooth not enabled. Cannot start scanning.")
+            Toast.makeText(this, "Please enable both GPS and Bluetooth.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setUpUI() {
