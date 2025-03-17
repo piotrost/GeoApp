@@ -3,7 +3,6 @@ package pl.pw.geoapp
 import android.content.Context
 import android.util.Log
 import org.altbeacon.beacon.*
-import org.altbeacon.beacon.Beacon
 import kotlin.math.pow
 
 class BeaconScanner(private val context: Context, private val callback: (List<BeaconData>) -> Unit) : BeaconConsumer {
@@ -15,15 +14,9 @@ class BeaconScanner(private val context: Context, private val callback: (List<Be
     private var isScanning = false // Track scanning state
 
     init {
-        beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(BeaconParser.ALTBEACON_LAYOUT))
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_UID_LAYOUT))
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_TLM_LAYOUT))
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_URL_LAYOUT))
-        beaconManager.foregroundBetweenScanPeriod = 1100L // Scan every ~1 second
-        beaconManager.backgroundBetweenScanPeriod = 0L // No delay in background
-        beaconManager.updateScanPeriods()
-        BeaconManager.setDebug(true) // Enable debug logs for beacon scanning
-        beaconManager.isRegionStatePersistenceEnabled = false
     }
 
     override fun onBeaconServiceConnect() {
