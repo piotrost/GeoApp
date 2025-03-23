@@ -3,11 +3,10 @@ package pl.pw.geoapp
 import android.content.Context
 import android.util.Log
 import org.altbeacon.beacon.*
+import pl.pw.geoapp.data.model.DetectedBeacon
 import kotlin.math.pow
 
-data class BeaconData(val uuid: String, val distance: Double)
-
-class BeaconScanner(private val context: Context, private val callback: (List<BeaconData>) -> Unit) {
+class BeaconScanner(private val context: Context, private val callback: (List<DetectedBeacon>) -> Unit) {
     companion object {
         private const val TAG = "pw.BeaconScanner"
     }
@@ -33,7 +32,7 @@ class BeaconScanner(private val context: Context, private val callback: (List<Be
 
             beaconManager.addRangeNotifier { beacons, _ ->
                 val beaconList = beacons.map {
-                    BeaconData(it.id1.toString(), estimateDistance(it.txPower, it.rssi))
+                    DetectedBeacon(it.id1.toString(), estimateDistance(it.txPower, it.rssi))
                 }
                 Log.d(TAG, "Detected ${beaconList.size} beacons")
                 callback(beaconList)

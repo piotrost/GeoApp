@@ -51,6 +51,6 @@ dependencies {
     implementation(libs.androidx.core.role)
     implementation(libs.androidx.core.animation)
     androidTestImplementation(libs.androidx.core.animation.testing)
-
     implementation(libs.android.beacon.library)
+    implementation(libs.gson)
 }

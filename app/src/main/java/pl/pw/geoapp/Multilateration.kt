@@ -1,12 +1,11 @@
 package pl.pw.geoapp
 
+import pl.pw.geoapp.data.model.FinalBeacon
 import kotlin.math.pow
 
-data class Beacon(val x: Double, val y: Double, val distance: Double)
-
 object Multilateration {
-    fun calculate(beacons: List<Beacon>): Pair<Double, Double>? {
-        if (beacons.size < 3) return null // Need at least 3 beacons
+    fun calculate(beacons: List<FinalBeacon>): Pair<Double, Double>? {
+        if (beacons.size < 3) return null
 
         val A = mutableListOf<DoubleArray>()
         val B = mutableListOf<Double>()

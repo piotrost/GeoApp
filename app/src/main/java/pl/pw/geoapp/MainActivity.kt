@@ -2,6 +2,7 @@ package pl.pw.geoapp
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -16,6 +17,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import pl.pw.geoapp.data.model.FinalBeacon
+import com.google.gson.Gson
+import pl.pw.geoapp.data.model.ArchiveBeacon
+import pl.pw.geoapp.data.model.ArchiveBeaconList
+import java.io.InputStreamReader
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -25,7 +31,7 @@ class MainActivity : AppCompatActivity() {
     private var beaconScanner: BeaconScanner? = null
     private var connectionReceiver: ConnectionChangeStateReceiver? = null
     private var lastKnownPosition: Pair<Double, Double>? = null
-
+    private var beaconDict: Map<String, ArchiveBeacon>? = null
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -52,9 +58,17 @@ class MainActivity : AppCompatActivity() {
         setUpUI()
         requestRequiredPermissions()
 
+        beaconDict = loadBeaconsFromAssets(this, "beacons")
         beaconScanner = BeaconScanner(this) { beacons ->
-            val beaconPositions = beacons.mapIndexed { index, beaconData ->
-                Beacon(x = index.toDouble() * 5.0, y = index.toDouble() * 5.0, distance = beaconData.distance)
+            val beaconPositions = beacons.mapNotNull { detectedBeacon ->
+                val archiveBeacon = beaconDict?.get(detectedBeacon.beaconUid)
+                archiveBeacon?.let {
+                    FinalBeacon(
+                        x = it.longitude,
+                        y = it.latitude,
+                        distance = detectedBeacon.distance
+                    )
+                }
             }
 
             val position = Multilateration.calculate(beaconPositions)
@@ -63,6 +77,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
             }
         }
+
     }
 
     override fun onStart() {
@@ -168,5 +183,29 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+    }
+
+    private fun loadBeaconsFromAssets(context: Context, folderName: String): Map<String, ArchiveBeacon> {
+        val assetManager = context.assets
+        val files = assetManager.list(folderName) ?: return emptyMap()
+
+        val gson = Gson()
+        val beaconsMap = mutableMapOf<String, ArchiveBeacon>()
+
+        for (fileName in files) {
+            val jsonString = assetManager.open("$folderName/$fileName").use { inputStream ->
+                InputStreamReader(inputStream).use { it.readText() }
+            }
+
+            val beaconList: ArchiveBeaconList = gson.fromJson(jsonString, ArchiveBeaconList::class.java)
+
+            for (beacon in beaconList.items) {
+                if (beacon.beaconUid != null) {
+                    beaconsMap[beacon.beaconUid] = beacon
+                }
+            }
+        }
+
+        return beaconsMap
     }
 }
