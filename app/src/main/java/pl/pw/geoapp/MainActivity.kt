@@ -2,7 +2,6 @@ package pl.pw.geoapp
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -19,9 +18,14 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        private const val TAG = "pw.MainActivity"
+    }
 
-    private lateinit var beaconScanner: BeaconScanner
-    private lateinit var connectionReceiver: ConnectionChangeStateReceiver
+    private var beaconScanner: BeaconScanner? = null
+    private var connectionReceiver: ConnectionChangeStateReceiver? = null
+    private var lastKnownPosition: Pair<Double, Double>? = null
+
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -42,21 +46,21 @@ class MainActivity : AppCompatActivity() {
         savedInstanceState: Bundle?
     ) {
         super.onCreate(savedInstanceState)
-        Log.d("MainActivity", "onCreate")
+        Log.d(TAG, "onCreate")
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
         setUpUI()
         requestRequiredPermissions()
 
         beaconScanner = BeaconScanner(this) { beacons ->
-            // The 'beacons' here contains the actual nearby beacons and their distance values
             val beaconPositions = beacons.mapIndexed { index, beaconData ->
                 Beacon(x = index.toDouble() * 5.0, y = index.toDouble() * 5.0, distance = beaconData.distance)
             }
 
             val position = Multilateration.calculate(beaconPositions)
+            lastKnownPosition = position
             position?.let {
-                Log.d("User Position", "X: ${it.first}, Y: ${it.second}")
+                Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
             }
         }
     }
@@ -64,14 +68,15 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         Log.d("MainActivity", "onStart")
-        checkGpsAndBluetoothState()
     }
 
     override fun onResume() {
         super.onResume()
         Log.d("MainActivity", "onResume")
-        findViewById<Button>(R.id.show_map_button).setOnClickListener{
-            Log.d("MainActivity", "CLICKED \"show_map_button\"")
+        findViewById<Button>(R.id.show_map_button).setOnClickListener {
+            lastKnownPosition?.let { (x, y) ->
+                Toast.makeText(this, "Last known position: X=$x, Y=$y", Toast.LENGTH_SHORT).show()
+            } ?: Toast.makeText(this, "Position unknown", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -93,8 +98,8 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("MainActivity", "onDestroy")
-        beaconScanner.stopScanning()
-        connectionReceiver?.let { unregisterReceiver(it) }  // Unregister receiver
+        beaconScanner?.stopScanning()
+        connectionReceiver?.let { unregisterReceiver(it) }
     }
 
     private fun requestRequiredPermissions() {
@@ -133,19 +138,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun listenForConnectionChanges() {
-        Toast.makeText(
-            this,
-            "Upewnij się, że masz włączony GPS oraz Bluetooth.",
-            Toast.LENGTH_SHORT
-        ).show()
-
         connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
             if (canScan) {
                 Log.d("MainActivity", "Starting beacon scanning...")
-                beaconScanner.startScanning()
+                beaconScanner?.startScanning()
             } else {
                 Log.d("MainActivity", "Stopping beacon scanning...")
-                beaconScanner.stopScanning()
+                beaconScanner?.stopScanning()
+
+                Toast.makeText(
+                    this,
+                    "Upewnij się, że masz włączony GPS oraz Bluetooth.",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
 
@@ -155,24 +160,6 @@ class MainActivity : AppCompatActivity() {
         }
         registerReceiver(connectionReceiver, filter)
 
-    }
-
-    private fun checkGpsAndBluetoothState() {
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
-        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        val isBluetoothEnabled = bluetoothAdapter?.isEnabled == true
-
-        if (isGpsEnabled && isBluetoothEnabled) {
-            // Both are enabled, start scanning
-            Log.d("MainActivity", "Starting beacon scanning...")
-            beaconScanner.startScanning()
-        } else {
-            // Show a message to the user
-            Log.d("MainActivity", "GPS or Bluetooth not enabled. Cannot start scanning.")
-            Toast.makeText(this, "Please enable both GPS and Bluetooth.", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private fun setUpUI() {

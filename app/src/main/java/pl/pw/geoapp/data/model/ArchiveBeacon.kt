@@ -1,8 +1,8 @@
 package pl.pw.geoapp.data.model
 
-data class ArchiveBeacon {
+data class ArchiveBeacon (
+    val uuid: String,
     val longitude: Double,
-    val latitude: Double,
-    cosiek
+    val latitude: Double
 
-}
+)
