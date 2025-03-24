@@ -10,7 +10,6 @@ object Multilateration {
         val refLat = beacons[0].x
         val refLon = beacons[0].y
 
-        // Convert all beacon coordinates to ENU
         val enuBeacons = beacons.map { beacon ->
             val enu = wgs84ToENU(refLat, refLon, beacon.x, beacon.y)
             Triple(enu.first, enu.second, beacon.distance)
@@ -30,7 +29,6 @@ object Multilateration {
 
         val enuResult = solveLeastSquares(A.toTypedArray(), B.toDoubleArray()) ?: return null
 
-        // Convert the ENU result back to WGS84
         return enuToWGS84(refLat, refLon, enuResult)
     }
 
@@ -56,7 +54,6 @@ object Multilateration {
         )
     }
 
-    // WGS84 to ENU conversion
     private fun wgs84ToENU(refLat: Double, refLon: Double, lat: Double, lon: Double): Pair<Double, Double> {
         val earthRadius = 6378137.0
 
@@ -71,7 +68,6 @@ object Multilateration {
         return Pair(east, north)
     }
 
-    // ENU to WGS84 conversion
     private fun enuToWGS84(refLat: Double, refLon: Double, enu: Pair<Double, Double>): Pair<Double, Double> {
         val earthRadius = 6378137.0
 
