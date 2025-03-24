@@ -2,7 +2,6 @@ package pl.pw.geoapp
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -58,21 +57,23 @@ class MainActivity : AppCompatActivity() {
         setUpUI()
         requestRequiredPermissions()
 
-        beaconDict = loadBeaconsFromAssets(this, "beacons")
+        beaconDict = loadBeaconsFromAssets("beacons")
         beaconScanner = BeaconScanner(this) { beacons ->
             val beaconPositions = beacons.mapNotNull { detectedBeacon ->
                 val archiveBeacon = beaconDict?.get(detectedBeacon.beaconUid)
                 archiveBeacon?.let {
                     FinalBeacon(
-                        x = it.longitude,
-                        y = it.latitude,
+                        x = it.latitude,
+                        y = it.longitude,
                         distance = detectedBeacon.distance
                     )
                 }
             }
 
             val position = Multilateration.calculate(beaconPositions)
-            lastKnownPosition = position
+            if (position != null){
+                lastKnownPosition = position
+            }
             position?.let {
                 Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
             }
@@ -90,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("MainActivity", "onResume")
         findViewById<Button>(R.id.show_map_button).setOnClickListener {
             lastKnownPosition?.let { (x, y) ->
-                Toast.makeText(this, "Last known position: X=$x, Y=$y", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "X=$x\nY=$y", Toast.LENGTH_SHORT).show()
             } ?: Toast.makeText(this, "Position unknown", Toast.LENGTH_SHORT).show()
         }
     }
@@ -157,6 +158,12 @@ class MainActivity : AppCompatActivity() {
             if (canScan) {
                 Log.d("MainActivity", "Starting beacon scanning...")
                 beaconScanner?.startScanning()
+
+                Toast.makeText(
+                    this,
+                    "Skanowanie w toku...",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 Log.d("MainActivity", "Stopping beacon scanning...")
                 beaconScanner?.stopScanning()
@@ -185,16 +192,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadBeaconsFromAssets(context: Context, folderName: String): Map<String, ArchiveBeacon> {
-        val assetManager = context.assets
+    private fun loadBeaconsFromAssets(folderName: String): Map<String, ArchiveBeacon> {
+        val assetManager = this.assets
         val files = assetManager.list(folderName) ?: return emptyMap()
 
         val gson = Gson()
         val beaconsMap = mutableMapOf<String, ArchiveBeacon>()
 
         for (fileName in files) {
-            val jsonString = assetManager.open("$folderName/$fileName").use { inputStream ->
-                InputStreamReader(inputStream).use { it.readText() }
+            val jsonString = InputStreamReader(assetManager.open("$folderName/$fileName")).use { reader ->
+                reader.readText()
             }
 
             val beaconList: ArchiveBeaconList = gson.fromJson(jsonString, ArchiveBeaconList::class.java)

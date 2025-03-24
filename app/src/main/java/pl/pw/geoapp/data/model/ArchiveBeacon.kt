@@ -6,7 +6,6 @@ data class ArchiveBeacon (
     val latitude: Double
 )
 
-
 data class ArchiveBeaconList(
     val items: List<ArchiveBeacon>
 )

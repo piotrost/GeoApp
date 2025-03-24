@@ -32,7 +32,7 @@ class BeaconScanner(private val context: Context, private val callback: (List<De
 
             beaconManager.addRangeNotifier { beacons, _ ->
                 val beaconList = beacons.map {
-                    DetectedBeacon(it.id1.toString(), estimateDistance(it.txPower, it.rssi))
+                    DetectedBeacon(it.bluetoothAddress.toString(), estimateDistance(it.txPower, it.rssi))
                 }
                 Log.d(TAG, "Detected ${beaconList.size} beacons")
                 callback(beaconList)
