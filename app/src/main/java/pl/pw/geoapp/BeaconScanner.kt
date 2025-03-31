@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import org.altbeacon.beacon.*
 import pl.pw.geoapp.data.model.DetectedBeacon
-import kotlin.math.pow
 
 class BeaconScanner(private val context: Context, private val callback: (List<DetectedBeacon>) -> Unit) {
     companion object {
@@ -53,9 +52,4 @@ class BeaconScanner(private val context: Context, private val callback: (List<De
             Log.d(TAG, "Stopped beacon scanning")
         }
     }
-
-//    private fun estimateDistance(txPower: Int, rssi: Int): Double {
-//        val n = 2.0
-//        return 10.0.pow((txPower - rssi) / (10 * n))
-//    }
 }

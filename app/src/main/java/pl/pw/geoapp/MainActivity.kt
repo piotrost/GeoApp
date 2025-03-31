@@ -17,15 +17,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.gson.Gson
 import pl.pw.geoapp.data.model.ArchiveBeacon
-import pl.pw.geoapp.data.model.ArchiveBeaconList
 import pl.pw.geoapp.data.model.FinalBeacon
-import java.io.InputStreamReader
 import org.osmdroid.config.Configuration
 import org.osmdroid.views.MapView
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
+import pl.pw.geoapp.data.model.loadBeaconsFromAssets
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -34,9 +32,9 @@ class MainActivity : AppCompatActivity() {
 
     private var beaconScanner: BeaconScanner? = null
     private var connectionReceiver: ConnectionChangeStateReceiver? = null
-    private var lastKnownPosition: Pair<Double, Double>? = null
     private var beaconDict: Map<String, ArchiveBeacon>? = null
     private var mapView: MapView? = null
+    private var lastKnownPosition: Pair<Double, Double>? = null
     private var currentMarker: Marker? = null  // To store the current marker
 
     private val requestPermissionLauncher =
@@ -66,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         setUpUI()
         requestRequiredPermissions()
 
-        beaconDict = loadBeaconsFromAssets("beacons")
+        beaconDict = loadBeaconsFromAssets("beacons", this)
         beaconScanner = BeaconScanner(this) { beacons ->
             val beaconPositions = beacons.mapNotNull { detectedBeacon ->
                 val archiveBeacon = beaconDict?.get(detectedBeacon.beaconUid)
@@ -143,6 +141,37 @@ class MainActivity : AppCompatActivity() {
         connectionReceiver?.let { unregisterReceiver(it) }
     }
 
+    private fun listenForConnectionChanges() {
+        connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
+            if (canScan) {
+                Log.d("MainActivity", "Starting beacon scanning...")
+                beaconScanner?.startScanning()
+
+                Toast.makeText(
+                    this,
+                    "Skanowanie w toku...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Log.d("MainActivity", "Stopping beacon scanning...")
+                beaconScanner?.stopScanning()
+
+                Toast.makeText(
+                    this,
+                    "Upewnij się, że masz włączony GPS oraz Bluetooth.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+        }
+        registerReceiver(connectionReceiver, filter)
+
+    }
+
     private fun requestRequiredPermissions() {
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(
@@ -178,67 +207,12 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    private fun listenForConnectionChanges() {
-        connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
-            if (canScan) {
-                Log.d("MainActivity", "Starting beacon scanning...")
-                beaconScanner?.startScanning()
-
-                Toast.makeText(
-                    this,
-                    "Skanowanie w toku...",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                Log.d("MainActivity", "Stopping beacon scanning...")
-                beaconScanner?.stopScanning()
-
-                Toast.makeText(
-                    this,
-                    "Upewnij się, że masz włączony GPS oraz Bluetooth.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
-        val filter = IntentFilter().apply {
-            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-        }
-        registerReceiver(connectionReceiver, filter)
-
-    }
-
     private fun setUpUI() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-    }
-
-    private fun loadBeaconsFromAssets(folderName: String): Map<String, ArchiveBeacon> {
-        val assetManager = this.assets
-        val files = assetManager.list(folderName) ?: return emptyMap()
-
-        val gson = Gson()
-        val beaconsMap = mutableMapOf<String, ArchiveBeacon>()
-
-        for (fileName in files) {
-            val jsonString = InputStreamReader(assetManager.open("$folderName/$fileName")).use { reader ->
-                reader.readText()
-            }
-
-            val beaconList: ArchiveBeaconList = gson.fromJson(jsonString, ArchiveBeaconList::class.java)
-
-            for (beacon in beaconList.items) {
-                if (beacon.beaconUid != null) {
-                    beaconsMap[beacon.beaconUid] = beacon
-                }
-            }
-        }
-
-        return beaconsMap
     }
 
     private fun updateMapWithPosition(latitude: Double, longitude: Double) {
