@@ -53,3 +53,4 @@ class BeaconScanner(private val context: Context, private val callback: (List<De
         }
     }
 }
+

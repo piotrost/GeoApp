@@ -1,6 +1,5 @@
 package pl.pw.geoapp
 
-
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.IntentFilter
@@ -83,7 +82,7 @@ class MainActivity : AppCompatActivity() {
             }
             position?.let {
                 Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
-                updateMapWithPosition(it.first, it.second)
+                currentMarker = updateMapWithPosition(it.first, it.second, mapView, currentMarker)
             }
         }
         mapView = findViewById(R.id.mapView)
@@ -112,13 +111,13 @@ class MainActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("osmdroid_prefs", MODE_PRIVATE)
         Configuration.getInstance().load(applicationContext, prefs)
-
         mapView?.onResume()
     }
 
     override fun onPause() {
         super.onPause()
         Log.d("MainActivity", "onPause")
+
         val prefs = getSharedPreferences("osmdroid_prefs", MODE_PRIVATE)
         Configuration.getInstance().load(applicationContext, prefs)
         mapView?.onPause()
@@ -213,27 +212,5 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-    }
-
-    private fun updateMapWithPosition(latitude: Double, longitude: Double) {
-        // Remove the previous marker if it exists
-        currentMarker?.let {
-            mapView?.overlays?.remove(it)
-        }
-
-        // Update map center to the new position
-        val mapController = mapView?.controller
-        mapController?.setCenter(GeoPoint(latitude, longitude)) // Update map center
-
-        // Place a new marker at the new position
-        val newMarker = Marker(mapView)
-        newMarker.position = GeoPoint(latitude, longitude)
-        newMarker.title = "Your Position" // Optional: set a title for the marker
-
-        // Add the new marker to the map
-        mapView?.overlays?.add(newMarker)
-
-        // Store the new marker to remove it next time
-        currentMarker = newMarker
     }
 }

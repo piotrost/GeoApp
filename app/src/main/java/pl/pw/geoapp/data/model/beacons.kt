@@ -4,6 +4,17 @@ import android.content.Context
 import com.google.gson.Gson
 import java.io.InputStreamReader
 
+data class DetectedBeacon (
+    val beaconUid: String,
+    val distance: Double
+)
+
+data class FinalBeacon(
+    val x: Double,
+    val y: Double,
+    val distance: Double
+)
+
 data class ArchiveBeacon (
     val beaconUid: String?,
     val longitude: Double,
