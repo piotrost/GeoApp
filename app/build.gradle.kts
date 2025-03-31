@@ -53,4 +53,7 @@ dependencies {
     androidTestImplementation(libs.androidx.core.animation.testing)
     implementation(libs.android.beacon.library)
     implementation(libs.gson)
+
+    implementation(libs.osmdroid.android.v6116)
+
 }

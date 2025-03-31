@@ -1,5 +1,6 @@
 package pl.pw.geoapp
 
+
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.content.IntentFilter
@@ -16,11 +17,15 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import pl.pw.geoapp.data.model.FinalBeacon
 import com.google.gson.Gson
 import pl.pw.geoapp.data.model.ArchiveBeacon
 import pl.pw.geoapp.data.model.ArchiveBeaconList
+import pl.pw.geoapp.data.model.FinalBeacon
 import java.io.InputStreamReader
+import org.osmdroid.config.Configuration
+import org.osmdroid.views.MapView
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.Marker
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -31,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private var connectionReceiver: ConnectionChangeStateReceiver? = null
     private var lastKnownPosition: Pair<Double, Double>? = null
     private var beaconDict: Map<String, ArchiveBeacon>? = null
+    private var mapView: MapView? = null
+    private var currentMarker: Marker? = null  // To store the current marker
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -53,6 +60,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate")
         enableEdgeToEdge()
+        val prefs = getSharedPreferences("osmdroid_prefs", MODE_PRIVATE)
+        Configuration.getInstance().load(applicationContext, prefs)
         setContentView(R.layout.activity_main)
         setUpUI()
         requestRequiredPermissions()
@@ -76,8 +85,16 @@ class MainActivity : AppCompatActivity() {
             }
             position?.let {
                 Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
+                updateMapWithPosition(it.first, it.second)
             }
         }
+        mapView = findViewById(R.id.mapView)
+        mapView?.setMultiTouchControls(true) // Enable pinch zoom
+
+        val mapController = mapView?.controller
+        mapController?.setZoom(19.0) // Zoom level (higher = closer)
+        mapController?.setCenter(GeoPoint(52.2207, 21.0096))
+
 
     }
 
@@ -94,11 +111,19 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "X=$x\nY=$y", Toast.LENGTH_SHORT).show()
             } ?: Toast.makeText(this, "Position unknown", Toast.LENGTH_SHORT).show()
         }
+
+        val prefs = getSharedPreferences("osmdroid_prefs", MODE_PRIVATE)
+        Configuration.getInstance().load(applicationContext, prefs)
+
+        mapView?.onResume()
     }
 
     override fun onPause() {
         super.onPause()
         Log.d("MainActivity", "onPause")
+        val prefs = getSharedPreferences("osmdroid_prefs", MODE_PRIVATE)
+        Configuration.getInstance().load(applicationContext, prefs)
+        mapView?.onPause()
     }
 
     override fun onStop() {
@@ -214,5 +239,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         return beaconsMap
+    }
+
+    private fun updateMapWithPosition(latitude: Double, longitude: Double) {
+        // Remove the previous marker if it exists
+        currentMarker?.let {
+            mapView?.overlays?.remove(it)
+        }
+
+        // Update map center to the new position
+        val mapController = mapView?.controller
+        mapController?.setCenter(GeoPoint(latitude, longitude)) // Update map center
+
+        // Place a new marker at the new position
+        val newMarker = Marker(mapView)
+        newMarker.position = GeoPoint(latitude, longitude)
+        newMarker.title = "Your Position" // Optional: set a title for the marker
+
+        // Add the new marker to the map
+        mapView?.overlays?.add(newMarker)
+
+        // Store the new marker to remove it next time
+        currentMarker = newMarker
     }
 }
