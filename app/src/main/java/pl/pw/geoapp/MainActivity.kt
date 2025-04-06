@@ -63,35 +63,7 @@ class MainActivity : AppCompatActivity() {
         setUpUI()
         requestRequiredPermissions()
 
-        beaconDict = loadBeaconsFromAssets("beacons", this)
-        beaconScanner = BeaconScanner(this) { beacons ->
-            val beaconPositions = beacons.mapNotNull { detectedBeacon ->
-                val archiveBeacon = beaconDict?.get(detectedBeacon.beaconUid)
-                archiveBeacon?.let {
-                    FinalBeacon(
-                        x = it.latitude,
-                        y = it.longitude,
-                        distance = detectedBeacon.distance
-                    )
-                }
-            }
-
-            val position = Multilateration.calculate(beaconPositions)
-            if (position != null){
-                lastKnownPosition = position
-            }
-            position?.let {
-                Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
-                currentMarker = updateMapWithPosition(it.first, it.second, mapView, currentMarker)
-            }
-        }
-        mapView = findViewById(R.id.mapView)
-        mapView?.setMultiTouchControls(true) // Enable pinch zoom
-
-        val mapController = mapView?.controller
-        mapController?.setZoom(19.0) // Zoom level (higher = closer)
-        mapController?.setCenter(GeoPoint(52.2207, 21.0096))
-
+        setUpPositioning()
 
     }
 
@@ -140,37 +112,6 @@ class MainActivity : AppCompatActivity() {
         connectionReceiver?.let { unregisterReceiver(it) }
     }
 
-    private fun listenForConnectionChanges() {
-        connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
-            if (canScan) {
-                Log.d("MainActivity", "Starting beacon scanning...")
-                beaconScanner?.startScanning()
-
-                Toast.makeText(
-                    this,
-                    "Skanowanie w toku...",
-                    Toast.LENGTH_SHORT
-                ).show()
-            } else {
-                Log.d("MainActivity", "Stopping beacon scanning...")
-                beaconScanner?.stopScanning()
-
-                Toast.makeText(
-                    this,
-                    "Upewnij się, że masz włączony GPS oraz Bluetooth.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
-        val filter = IntentFilter().apply {
-            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-        }
-        registerReceiver(connectionReceiver, filter)
-
-    }
-
     private fun requestRequiredPermissions() {
         val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(
@@ -204,6 +145,74 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return true
+    }
+
+    private fun listenForConnectionChanges() {
+        connectionReceiver = ConnectionChangeStateReceiver(this) { canScan ->
+            if (canScan) {
+                Log.d("MainActivity", "Starting beacon scanning...")
+                beaconScanner?.startScanning()
+
+                Toast.makeText(
+                    this,
+                    "Skanowanie w toku...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                Log.d("MainActivity", "Stopping beacon scanning...")
+                beaconScanner?.stopScanning()
+
+                Toast.makeText(
+                    this,
+                    "Upewnij się, że masz włączony GPS oraz Bluetooth.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        val filter = IntentFilter().apply {
+            addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
+            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+        }
+        registerReceiver(connectionReceiver, filter)
+
+    }
+
+    private fun setUpPositioning() {
+        beaconDict = loadBeaconsFromAssets("beacons", this)
+        beaconScanner = BeaconScanner(this) { beacons ->
+            val beaconPositions = beacons.mapNotNull { detectedBeacon ->
+                val archiveBeacon = beaconDict?.get(detectedBeacon.beaconUid)
+                archiveBeacon?.let {
+                    FinalBeacon(
+                        x = it.latitude,
+                        y = it.longitude,
+                        distance = detectedBeacon.distance
+                    )
+                }
+            }
+
+            val beaconsss = listOf(
+                FinalBeacon(x = 52.2297, y = 21.0122, distance = 10.0),
+                FinalBeacon(x = 52.2298, y = 21.0123, distance = 12.0),
+                FinalBeacon(x = 52.2296, y = 21.0121, distance = 13.0)
+            )
+
+            val position = Multilateration.calculate(beaconsss)
+            if (position != null){
+                lastKnownPosition = position
+            }
+            position?.let {
+                Log.d(TAG, "USER POSITION -> X: ${it.first}, Y: ${it.second}")
+                currentMarker = updateMapWithPosition(it.first, it.second, mapView, currentMarker)
+            }
+        }
+        mapView = findViewById(R.id.mapView)
+        mapView?.setMultiTouchControls(true) // Enable pinch zoom
+
+        val mapController = mapView?.controller
+        mapController?.setZoom(19.0) // Zoom level (higher = closer)
+        mapController?.setCenter(GeoPoint(52.2207, 21.0096))
     }
 
     private fun setUpUI() {

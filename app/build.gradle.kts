@@ -46,14 +46,11 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // added
     implementation(libs.androidx.core)
     implementation(libs.androidx.core.role)
     implementation(libs.androidx.core.animation)
     androidTestImplementation(libs.androidx.core.animation.testing)
     implementation(libs.android.beacon.library)
     implementation(libs.gson)
-
     implementation(libs.osmdroid.android.v6116)
-
 }
