@@ -192,13 +192,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val beaconsss = listOf(
-                FinalBeacon(x = 52.2297, y = 21.0122, distance = 10.0),
-                FinalBeacon(x = 52.2298, y = 21.0123, distance = 12.0),
-                FinalBeacon(x = 52.2296, y = 21.0121, distance = 13.0)
-            )
+//            val beaconsss = listOf(
+//                FinalBeacon(x = 52.2297, y = 21.0122, distance = 10.0),
+//                FinalBeacon(x = 52.2298, y = 21.0123, distance = 12.0),
+//                FinalBeacon(x = 52.2296, y = 21.0121, distance = 13.0)
+//            )
 
-            val position = Multilateration.calculate(beaconsss)
+            val position = Multilateration.calculate(beaconPositions)
             if (position != null){
                 lastKnownPosition = position
             }
