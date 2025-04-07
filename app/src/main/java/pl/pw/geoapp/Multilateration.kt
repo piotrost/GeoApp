@@ -60,9 +60,7 @@ object Multilateration {
         val dLat = Math.toRadians(lat - refLat)
         val dLon = Math.toRadians(lon - refLon)
 
-        val meanLat = Math.toRadians((lat + refLat) / 2.0)
-
-        val east = dLon * earthRadius * cos(meanLat)
+        val east = dLon * earthRadius * cos(refLat)
         val north = dLat * earthRadius
 
         return Pair(east, north)

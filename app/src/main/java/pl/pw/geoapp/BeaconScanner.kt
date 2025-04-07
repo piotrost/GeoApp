@@ -23,6 +23,12 @@ class BeaconScanner(private val context: Context, private val callback: (List<De
         ).forEach {
             beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout(it))
         }
+
+        // Set custom scan periods (e.g., scan for 1 second every 5 seconds)
+        beaconManager.foregroundScanPeriod = 5000L // Scan for 1000ms (1 second)
+        beaconManager.foregroundBetweenScanPeriod = 100L // Wait 4000ms (4 seconds) between scans
+        beaconManager.updateScanPeriods() // Apply the changes
+
     }
 
     fun startScanning() {
