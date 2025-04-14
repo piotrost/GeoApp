@@ -193,12 +193,18 @@ class MainActivity : AppCompatActivity() {
             }
 
 //            val beaconsss = listOf(
-//                FinalBeacon(x = 52.2297, y = 21.0122, distance = 10.0),
-//                FinalBeacon(x = 52.2298, y = 21.0123, distance = 12.0),
-//                FinalBeacon(x = 52.2296, y = 21.0121, distance = 13.0)
+//                FinalBeacon(x=52.22064396008256, y=21.009697033995153, distance=0.4343884542236323),
+//                FinalBeacon(x=52.22066679, y=21.00960664, distance=0.15516041187205845),
+//                FinalBeacon(x=52.220749757094815, y=21.009567263503705, distance=0.6648326359915008),
+//                FinalBeacon(x=52.22075213, y=21.00967231, distance=0.5386151140948994),
+//                FinalBeacon(x=52.22064318, y=21.00969221, distance=0.6648326359915008),
+//                FinalBeacon(x=52.220750671765316, y=21.00967526042275, distance=0.00984930291881791),
+//                FinalBeacon(x=52.220759284911374, y=21.0098905077384, distance=0.27850097600940216),
+//                FinalBeacon(x=52.22071499960274, y=21.009802293665103, distance=0.17490122876598085),
+//                FinalBeacon(x=52.22069838307279, y=21.009744562593166, distance=0.4839823071792934)
 //            )
 
-            val position = Multilateration.calculate(beaconPositions)
+            val position = PositioningAlgorithm.multilateration(beaconPositions)
             if (position != null){
                 lastKnownPosition = position
             }

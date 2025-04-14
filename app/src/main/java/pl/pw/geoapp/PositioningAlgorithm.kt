@@ -3,16 +3,19 @@ package pl.pw.geoapp
 import pl.pw.geoapp.data.model.FinalBeacon
 import kotlin.math.*
 
-object Multilateration {
-    fun calculate(beacons: List<FinalBeacon>): Pair<Double, Double>? {
-        if (beacons.size < 3) return null
+object PositioningAlgorithm {
+    private const val distanceMultiplier: Double = 5.0
+
+    fun multilateration(beacons: List<FinalBeacon>): Pair<Double, Double>? {
+        if (beacons.size <= 1) return null
+        else if (beacons.size <= 4) return weightedMean(beacons)
 
         val refLat = beacons[0].x
         val refLon = beacons[0].y
 
         val enuBeacons = beacons.map { beacon ->
             val enu = wgs84ToENU(refLat, refLon, beacon.x, beacon.y)
-            Triple(enu.first, enu.second, beacon.distance)
+            Triple(enu.first, enu.second, beacon.distance * distanceMultiplier)
         }
 
         val A = mutableListOf<DoubleArray>()
@@ -30,6 +33,29 @@ object Multilateration {
         val enuResult = solveLeastSquares(A.toTypedArray(), B.toDoubleArray()) ?: return null
 
         return enuToWGS84(refLat, refLon, enuResult)
+    }
+
+    fun weightedMean(beacons: List<FinalBeacon>): Pair<Double, Double>? {
+        if (beacons.size < 2) return null
+
+        var sumWeightsX = 0.0
+        var weightedX = 0.0
+        var sumWeightsY = 0.0
+        var weightedY = 0.0
+
+        for (beacon in beacons) {
+            val weight = if (beacon.distance < 1e-10) 1e10 else 1.0 / beacon.distance
+
+            sumWeightsX += weight
+            weightedX += beacon.x * weight
+            sumWeightsY += weight
+            weightedY += beacon.y * weight
+        }
+
+        val resultX = weightedX / sumWeightsX
+        val resultY = weightedY / sumWeightsY
+
+        return Pair(resultX, resultY)
     }
 
     private fun solveLeastSquares(A: Array<DoubleArray>, B: DoubleArray): Pair<Double, Double>? {
