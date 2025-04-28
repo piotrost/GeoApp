@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "902080124537",
+    "project_id": "battlegik",
+    "storage_bucket": "battlegik.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:902080124537:android:ee645675a73442d6ff66a8",
+        "android_client_info": {
+          "package_name": "pl.pw.geoapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOp8RpchSK35-uR7rauFKarUox_64FzdA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

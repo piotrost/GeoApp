@@ -3,3 +3,10 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.jetbrains.kotlin.android) apply false
 }
+
+buildscript {
+    dependencies {
+        // Add Google Services plugin
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
