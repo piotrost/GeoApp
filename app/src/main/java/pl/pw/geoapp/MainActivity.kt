@@ -38,9 +38,8 @@ class MainActivity : AppCompatActivity() {
     private var mapView: MapView? = null
     private var lastKnownPosition: Pair<Double, Double>? = null
     private var currentMarker: Marker? = null  // To store the current marker
-
-    // example
-    private lateinit var db: FirebaseFirestore
+    private var db: FirebaseFirestore? = null
+    private var firestoreAuthManager: FirestoreAuthManager? = null
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -71,7 +70,34 @@ class MainActivity : AppCompatActivity() {
 
         setUpPositioning()
 
-        // example
+        // Initialize FirestoreAuthManager and create a protected collection
+        firestoreAuthManager = FirestoreAuthManager(this)
+        firestoreAuthManager?.createProtectedCollection(object : FirestoreAuthManager.AuthCallback {
+            override fun onSuccess(collectionName: String, password: String) {
+                Toast.makeText(this@MainActivity, "Collection '$collectionName' created. Password: $password", Toast.LENGTH_LONG).show()
+                // Write to the protected collection
+                val user = hashMapOf(
+                    "name" to "John Doe",
+                    "age" to 25,
+                    "city" to "New York"
+                )
+                firestoreAuthManager?.writeToProtectedCollection(collectionName, password, user, object : FirestoreAuthManager.AccessCallback {
+                    override fun onSuccess() {
+                        Toast.makeText(this@MainActivity, "Data written to '$collectionName'", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onFailure(errorMessage: String) {
+                        Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                    }
+                })
+            }
+
+            override fun onFailure(errorMessage: String) {
+                Toast.makeText(this@MainActivity, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        // firestore
         db = FirebaseFirestore.getInstance()
 
         val user = hashMapOf(
@@ -79,16 +105,14 @@ class MainActivity : AppCompatActivity() {
             "age" to 25,
             "city" to "New York"
         )
-        db.collection("users")
-            .add(user)
-            .addOnSuccessListener { documentReference ->
+        db?.collection("users")
+            ?.add(user)
+            ?.addOnSuccessListener { documentReference ->
                 Log.d("Firestore", "Document added with ID: ${documentReference.id}")
             }
-            .addOnFailureListener { e ->
+            ?.addOnFailureListener { e ->
                 Log.w("Firestore", "Error adding document", e)
             }
-
-
     }
 
     override fun onStart() {
